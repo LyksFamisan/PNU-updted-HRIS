@@ -16,6 +16,7 @@ export default async function handler(req,res){
  const rows=await sql`INSERT INTO payroll_periods(period_label,period_start,period_end,pay_date) VALUES (${label.trim()},${start},${end},${payDate||null}) ON CONFLICT (period_start,period_end) DO NOTHING RETURNING id,period_label,status`;
  if(!rows.length)return res.status(409).json({error:"Payroll period already exists"});
  await sql`INSERT INTO payroll_audit_log(period_id,action,actor_identifier) VALUES (${rows[0].id},'created',${user.id})`;
+ await sql`INSERT INTO app_notifications(recipient_user_id,title,body,kind) VALUES (${user.id},'Payroll period created',${'Draft payroll period '+label.trim()+' has been saved.'},'success')`;
  return res.status(201).json({period:rows[0]});
  }catch{return res.status(503).json({error:"Payroll database unavailable or invalid input"});}
 }
