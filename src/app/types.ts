@@ -14,7 +14,7 @@ export interface UserAccount {
   lastLogin: string;
   isActive: boolean;
 }
-export type Page = "dashboard" | "employees" | "hr-records" | "employee-detail" | "payroll" | "payslip" | "leave" | "attendance" | "reports" | "notifications" | "settings" | "audit" | "profile" | "recruitment" | "training" | "performance" | "rewards" | "wellness" | "faculty";
+export type Page = "dashboard" | "employees" | "hr-records" | "employee-detail" | "payroll" | "payslip" | "leave" | "attendance" | "reports" | "notifications" | "settings" | "audit" | "access-control" | "profile" | "recruitment" | "training" | "performance" | "rewards" | "wellness" | "faculty";
 
 export interface Employee {
   id: string; employeeNo: string; fullName: string;
