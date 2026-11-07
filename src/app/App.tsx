@@ -187,20 +187,20 @@ const PORTAL_CARDS: Array<{
   { role:"faculty_management", title:"Faculty Management Staff", shortTitle:"Faculty Management", desc:"Manage faculty profiles, teaching loads, academic records, and evaluations", icon:BookOpen, color:"#0369A1", gradient:"linear-gradient(135deg,#0C4A6E,#0369A1)", modules:["Faculty Profiles","Teaching Load","Research"], audience:"Faculty Management Office" },
 ];
 
-const DEMO_CREDS: Record<Role,{username:string;password:string}> = {
-  admin:{username:"admin",password:"pnu@2024"},
-  hr_records:{username:"hrmo",password:"hrmo@2024"},
-  payroll:{username:"payroll",password:"payroll@2024"},
-  recruitment:{username:"recruitment",password:"recruit@2024"},
-  training:{username:"training",password:"train@2024"},
-  performance:{username:"performance",password:"perf@2024"},
-  rewards:{username:"rewards",password:"rewards@2024"},
-  wellness:{username:"wellness",password:"wellness@2024"},
-  timekeeping:{username:"timekeeping",password:"time@2024"},
-  leave_management:{username:"leave",password:"leave@2024"},
-  management:{username:"exec",password:"exec@2024"},
-  employee:{username:"employee1",password:"emp@2024"},
-  faculty_management:{username:"facultyadmin",password:"faculty@2024"},
+const SAMPLE_PORTAL_EMAILS: Record<Role,string> = {
+  "admin": "pnu@gmail.com",
+  "hr_records": "hr.pnu@gmail.com",
+  "payroll": "payroll.pnu@gmail.com",
+  "recruitment": "recruitment.pnu@gmail.com",
+  "training": "training.pnu@gmail.com",
+  "performance": "performance.pnu@gmail.com",
+  "rewards": "rewards.pnu@gmail.com",
+  "wellness": "wellness.pnu@gmail.com",
+  "timekeeping": "timekeeping.pnu@gmail.com",
+  "leave_management": "leave.pnu@gmail.com",
+  "management": "management.pnu@gmail.com",
+  "employee": "employee.pnu@gmail.com",
+  "faculty_management": "faculty.pnu@gmail.com"
 };
 
 const ROLE_FEATURES: Record<Role,string[]> = {
@@ -413,7 +413,7 @@ function LoginScreen({ role, onBack, onLogin }: {
                     onKeyDown={e=>e.key==="Enter"&&handleLogin()}
                     className="w-full border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none bg-muted/30 focus:border-[var(--rc)]"
                     style={{"--rc":card.color+"60"} as React.CSSProperties}
-                    placeholder="name@gmail.com" type="email" autoComplete="username"/>
+                    placeholder={SAMPLE_PORTAL_EMAILS[role]} type="email" autoComplete="username"/>
                 </div>
               </div>
               <div>
