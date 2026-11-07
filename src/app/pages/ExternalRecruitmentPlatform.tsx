@@ -99,7 +99,8 @@ export function ExternalRecruitmentPlatform({vacancies,applicants,onApply,api}:{
     clearAlerts();setBusy(true);
     try{
       const email=authForm.email.trim().toLowerCase(),account=accounts()[email];
-      if(!account||account.passwordHash!==await hashPassword(authForm.password))throw new Error("Email or password is incorrect.");
+      if(!account)throw new Error("No applicant account was found in this browser. Select Create an account to register first. Prototype accounts are saved only in the browser where they were created.");
+      if(account.passwordHash!==await hashPassword(authForm.password))throw new Error("Incorrect password for this applicant account. Use the password chosen during registration, or select Forgot password.");
       if(!account.verified)throw new Error("Verify your email first. In this prototype, use the verification action shown after registration.");
       refreshApplicantData(email);setView(selectedVacancyId?"apply":"dashboard");setMessage("Signed in using simulated prototype authentication.");
     }catch(e){setError(e instanceof Error?e.message:"Could not sign in.");}
@@ -109,9 +110,9 @@ export function ExternalRecruitmentPlatform({vacancies,applicants,onApply,api}:{
     clearAlerts();setBusy(true);
     try{
       const email=authForm.email.trim().toLowerCase();
-      if(!email||!authForm.password||authForm.password.length<8)throw new Error("Enter a valid email and a password of at least 8 characters.");
+      if(!email||!authForm.password||authForm.password.length<8)throw new Error("Enter a valid email and create a password of at least 8 characters. Shorter passwords cannot be registered.");
       if(authForm.password!==authForm.confirm)throw new Error("Password confirmation does not match.");
-      const existing=accounts();if(existing[email])throw new Error("An account already exists for this email.");
+      const existing=accounts();if(existing[email])throw new Error("This email already has a prototype account in this browser. Sign in or use Forgot password.");
       setAccounts({...existing,[email]:{passwordHash:await hashPassword(authForm.password),verified:false}});
       saveMockProfile(emptyProfile(email));
       setMessage(`Prototype verification code: 000000. Email delivery is simulated.`);
