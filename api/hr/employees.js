@@ -16,6 +16,7 @@ export default async function handler(req,res){
  const rows=await sql`INSERT INTO employees(employee_number,full_name,department,position_title,employment_type,salary_grade,salary_step,source_url) VALUES (${employeeNumber},${fullName.trim()},${department||null},${positionTitle||null},${employmentType||null},${salaryGrade??null},${salaryStep??null},${sourceUrl||null}) ON CONFLICT(employee_number) DO NOTHING RETURNING id,employee_number,full_name`;
  if(!rows.length)return res.status(409).json({error:"Employee number already exists"});
  await sql`INSERT INTO payroll_audit_log(action,actor_identifier,details) VALUES ('employee_created',${user.id},${JSON.stringify({employeeId:rows[0].id})}::jsonb)`;
+ await sql`INSERT INTO app_notifications(recipient_user_id,title,body,kind) VALUES (${user.id},'Employee record saved',${'Employee '+employeeNumber+' was added to the HR database.'},'success')`;
  return res.status(201).json({employee:rows[0]});
  }catch{return res.status(503).json({error:"Employee database unavailable"});}
 }
