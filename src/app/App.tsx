@@ -187,20 +187,20 @@ const PORTAL_CARDS: Array<{
   { role:"faculty_management", title:"Faculty Management Staff", shortTitle:"Faculty Management", desc:"Manage faculty profiles, teaching loads, academic records, and evaluations", icon:BookOpen, color:"#0369A1", gradient:"linear-gradient(135deg,#0C4A6E,#0369A1)", modules:["Faculty Profiles","Teaching Load","Research"], audience:"Faculty Management Office" },
 ];
 
-const SAMPLE_PORTAL_EMAILS: Record<Role,string> = {
-  "admin": "pnu@gmail.com",
-  "hr_records": "hr.pnu@gmail.com",
-  "payroll": "payroll.pnu@gmail.com",
-  "recruitment": "recruitment.pnu@gmail.com",
-  "training": "training.pnu@gmail.com",
-  "performance": "performance.pnu@gmail.com",
-  "rewards": "rewards.pnu@gmail.com",
-  "wellness": "wellness.pnu@gmail.com",
-  "timekeeping": "timekeeping.pnu@gmail.com",
-  "leave_management": "leave.pnu@gmail.com",
-  "management": "management.pnu@gmail.com",
-  "employee": "employee.pnu@gmail.com",
-  "faculty_management": "faculty.pnu@gmail.com"
+const DEMO_CREDS: Record<Role,{username:string;password:string}> = {
+  admin:{username:"admin",password:"pnu@2024"},
+  hr_records:{username:"hrmo",password:"hrmo@2024"},
+  payroll:{username:"payroll",password:"payroll@2024"},
+  recruitment:{username:"recruitment",password:"recruit@2024"},
+  training:{username:"training",password:"train@2024"},
+  performance:{username:"performance",password:"perf@2024"},
+  rewards:{username:"rewards",password:"rewards@2024"},
+  wellness:{username:"wellness",password:"wellness@2024"},
+  timekeeping:{username:"timekeeping",password:"time@2024"},
+  leave_management:{username:"leave",password:"leave@2024"},
+  management:{username:"exec",password:"exec@2024"},
+  employee:{username:"employee1",password:"emp@2024"},
+  faculty_management:{username:"facultyadmin",password:"faculty@2024"},
 };
 
 const ROLE_FEATURES: Record<Role,string[]> = {
@@ -306,25 +306,23 @@ function LoginScreen({ role, onBack, onLogin }: {
   role:Role; onBack:()=>void; onLogin:(account:UserAccount)=>void;
 }) {
   const card = PORTAL_CARDS.find(c=>c.role===role) || PORTAL_CARDS[0];
-  
+  const creds = DEMO_CREDS[role];
   const features = ROLE_FEATURES[role];
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState(creds.username);
+  const [password, setPassword] = useState(creds.password);
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     setAuthError("");
-    if(!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(username.trim())) {setAuthError("Enter a valid email address (e.g., name@gmail.com).");return;}
     setLoading(true);
-    try {
-      const response=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({email:username.trim(),password})});
-      const result=await response.json();
-      if(!response.ok) {setAuthError(result.error||"Invalid email or password.");return;}
-      window.location.assign("/secure-payroll");
-    }catch{setAuthError("Authentication service unavailable. Please try again.");}
-    finally{setLoading(false);}
+    setTimeout(() => {
+      const account = authenticateUser(username, password, role);
+      setLoading(false);
+      if (account) { onLogin(account); }
+      else { setAuthError("Invalid credentials. Check username and password for this portal."); }
+    }, 900);
   };
 
   return (
@@ -406,14 +404,14 @@ function LoginScreen({ role, onBack, onLogin }: {
                 </div>
               )}
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Email address</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Username</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
                   <input value={username} onChange={e=>{setUsername(e.target.value);setAuthError("");}}
                     onKeyDown={e=>e.key==="Enter"&&handleLogin()}
                     className="w-full border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none bg-muted/30 focus:border-[var(--rc)]"
                     style={{"--rc":card.color+"60"} as React.CSSProperties}
-                    placeholder={SAMPLE_PORTAL_EMAILS[role]} type="email" autoComplete="username"/>
+                    placeholder="username"/>
                 </div>
               </div>
               <div>
@@ -437,8 +435,28 @@ function LoginScreen({ role, onBack, onLogin }: {
             </div>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mb-3">Use your authorized email account. Gmail addresses are accepted; your organization work email is also supported.</p>
-          <button onClick={()=>window.location.assign("/secure-payroll")} className="block mx-auto text-sm underline text-blue-700">Account activation / password setup</button>
+          {/* Demo credentials card */}
+          <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{backgroundColor:card.color+"20"}}>
+                <Info className="w-2.5 h-2.5" style={{color:card.color}}/>
+              </div>
+              <p className="text-xs font-semibold text-foreground">Demo Credentials</p>
+              <span className="text-[11px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium ml-auto">Demo Mode</span>
+            </div>
+            <div className="flex items-center gap-4 p-3 rounded-xl" style={{backgroundColor:card.color+"08"}}>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Username</p>
+                <p className="text-sm font-mono font-bold text-foreground">{creds.username}</p>
+              </div>
+              <div className="w-px h-8 bg-border"/>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Password</p>
+                <p className="text-sm font-mono font-bold text-foreground">{creds.password}</p>
+              </div>
+            </div>
+          </div>
+
           <p className="text-center text-xs text-muted-foreground mt-4">Authorized personnel only · PNU HRIPS Centralized Auth · v2024.08</p>
         </div>
       </div>
