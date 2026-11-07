@@ -306,23 +306,25 @@ function LoginScreen({ role, onBack, onLogin }: {
   role:Role; onBack:()=>void; onLogin:(account:UserAccount)=>void;
 }) {
   const card = PORTAL_CARDS.find(c=>c.role===role) || PORTAL_CARDS[0];
-  const creds = DEMO_CREDS[role];
+  
   const features = ROLE_FEATURES[role];
-  const [username, setUsername] = useState(creds.username);
-  const [password, setPassword] = useState(creds.password);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setAuthError("");
+    if(!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(username.trim())) {setAuthError("Enter a valid email address (e.g., name@gmail.com).");return;}
     setLoading(true);
-    setTimeout(() => {
-      const account = authenticateUser(username, password, role);
-      setLoading(false);
-      if (account) { onLogin(account); }
-      else { setAuthError("Invalid credentials. Check username and password for this portal."); }
-    }, 900);
+    try {
+      const response=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({email:username.trim(),password})});
+      const result=await response.json();
+      if(!response.ok) {setAuthError(result.error||"Invalid email or password.");return;}
+      window.location.assign("/secure-payroll");
+    }catch{setAuthError("Authentication service unavailable. Please try again.");}
+    finally{setLoading(false);}
   };
 
   return (
@@ -404,14 +406,14 @@ function LoginScreen({ role, onBack, onLogin }: {
                 </div>
               )}
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Username</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Email address</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
                   <input value={username} onChange={e=>{setUsername(e.target.value);setAuthError("");}}
                     onKeyDown={e=>e.key==="Enter"&&handleLogin()}
                     className="w-full border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none bg-muted/30 focus:border-[var(--rc)]"
                     style={{"--rc":card.color+"60"} as React.CSSProperties}
-                    placeholder="username"/>
+                    placeholder="name@gmail.com" type="email" autoComplete="username"/>
                 </div>
               </div>
               <div>
@@ -435,28 +437,8 @@ function LoginScreen({ role, onBack, onLogin }: {
             </div>
           </div>
 
-          {/* Demo credentials card */}
-          <div className="bg-card rounded-xl border border-border p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{backgroundColor:card.color+"20"}}>
-                <Info className="w-2.5 h-2.5" style={{color:card.color}}/>
-              </div>
-              <p className="text-xs font-semibold text-foreground">Demo Credentials</p>
-              <span className="text-[11px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium ml-auto">Demo Mode</span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-xl" style={{backgroundColor:card.color+"08"}}>
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Username</p>
-                <p className="text-sm font-mono font-bold text-foreground">{creds.username}</p>
-              </div>
-              <div className="w-px h-8 bg-border"/>
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Password</p>
-                <p className="text-sm font-mono font-bold text-foreground">{creds.password}</p>
-              </div>
-            </div>
-          </div>
-
+          <p className="text-center text-xs text-muted-foreground mb-3">Use your authorized email account. Gmail addresses are accepted; your organization work email is also supported.</p>
+          <button onClick={()=>window.location.assign("/secure-payroll")} className="block mx-auto text-sm underline text-blue-700">Account activation / password setup</button>
           <p className="text-center text-xs text-muted-foreground mt-4">Authorized personnel only · PNU HRIPS Centralized Auth · v2024.08</p>
         </div>
       </div>
