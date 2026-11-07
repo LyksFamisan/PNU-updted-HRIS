@@ -173,6 +173,7 @@ const PORTAL_CARDS: Array<{
   role:Role; title:string; shortTitle:string; desc:string;
   icon:React.ElementType; color:string; gradient:string; modules:string[]; audience:string;
 }> = [
+  { role:"admin", title:"System Administrator Portal", shortTitle:"System Administrator", desc:"Central administration of all HRIPS modules, users, roles, permissions, system settings and audit trails", icon:Shield, color:"#C8A84B", gradient:"linear-gradient(135deg,#102747,#385B85)", modules:["All 11 HRIPS Modules","Users & Roles","Audit & Settings"], audience:"Authorized PNU System Administrators" },
   { role:"recruitment", title:"Recruitment Staff", shortTitle:"Recruitment", desc:"Manage job vacancies, screen applicants, and facilitate the full hiring pipeline", icon:UserPlus, color:"#7C3AED", gradient:"linear-gradient(135deg,#4C1D95,#7C3AED)", modules:["Vacancies","Applicants","Placement"], audience:"HRDO Recruitment Unit" },
   { role:"training", title:"Training Staff", shortTitle:"Training Staff", desc:"Coordinate learning and development programs, nominations, and staff certification tracking", icon:GraduationCap, color:"#D97706", gradient:"linear-gradient(135deg,#78350F,#D97706)", modules:["L&D Programs","Nominations","Certificates"], audience:"HRDO Training Unit" },
   { role:"performance", title:"Performance Management Staff", shortTitle:"Performance", desc:"Facilitate IPCR/OPCR rating, evaluation forms, and performance reporting", icon:Target, color:"#DC2626", gradient:"linear-gradient(135deg,#7F1D1D,#DC2626)", modules:["IPCR","OPCR","Ratings"], audience:"HRDO Performance Unit" },
@@ -469,6 +470,7 @@ type NavItem = { icon: React.ElementType; label: string; page: Page; group?: str
 const NAV: Record<string, NavItem[]> = {
   admin: [
     { icon:LayoutDashboard, label:"Dashboard", page:"dashboard" },
+    { icon:Key, label:"Access Control Center", page:"access-control", group:"Administration" },
     { icon:Users, label:"Employee Management", page:"employees", group:"Workforce" },
     { icon:UserPlus, label:"Recruitment", page:"recruitment", group:"Workforce" },
     { icon:BookOpen, label:"Faculty Management", page:"faculty", group:"Workforce" },
@@ -2405,6 +2407,53 @@ function AdminFacultyMapView({ records, employees }: { records:PhotoAttendanceRe
   );
 }
 
+// Administrator access overview for the existing demonstration application.
+// Actual authorization must be enforced by a secure backend before production use.
+function AdminAccessCenter() {
+  const modules = [
+    "Employee Records & 201 Files","Recruitment & Selection","Faculty Management",
+    "Payroll Management","Leave Management","Attendance & DTR",
+    "Learning & Development","Performance Management","Rewards & Recognition",
+    "Health & Wellness","Reports & Analytics"
+  ];
+  const roles = [
+    ["System Administrator","All modules, configuration and audit oversight"],
+    ["HR Records Staff","Employee records and personnel documents"],
+    ["Recruitment Staff","Vacancies, applicants and hiring"],
+    ["Payroll Staff","Payroll and deductions"],
+    ["Timekeeping Staff","Attendance and DTR"],
+    ["Leave Management Staff","Leave processing"],
+    ["Training Staff","Learning and development"],
+    ["Performance Management Staff","Performance reviews"],
+    ["Rewards Staff","Recognition programs"],
+    ["Wellness Staff","Health and wellness"],
+    ["Faculty Management Staff","Faculty profiles"],
+    ["Management / Executive","Reports and oversight"],
+    ["Employee / Faculty","Self-service only"]
+  ];
+  return <div className="space-y-5">
+    <SectionHeader title="System Administrator Portal" subtitle="Centralized overview of all HRIPS modules, roles and system administration"/>
+    <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+      <strong>Prototype access overview:</strong> This interface shows the intended administrator permissions. User provisioning and secure permission enforcement require backend authentication, authorization and server-side audit logging before production deployment.
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {[["11","HRIPS Modules"],["13","Defined User Roles"],["Full","Administrator Module Visibility"]].map(([value,label])=><div key={label} className="rounded-xl bg-card border border-border p-5"><p className="text-3xl font-bold text-primary">{value}</p><p className="text-sm text-muted-foreground mt-1">{label}</p></div>)}
+    </div>
+    <div className="rounded-xl bg-card border border-border p-5">
+      <h3 className="font-semibold mb-3 flex items-center gap-2"><Shield className="w-5 h-5"/>Full Module Access — Administrator</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">{modules.map(m=><div key={m} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm"><span>{m}</span><span className="text-green-700 font-semibold flex items-center gap-1"><CheckCircle className="w-4 h-4"/>Full Access</span></div>)}</div>
+    </div>
+    <div className="rounded-xl bg-card border border-border p-5">
+      <h3 className="font-semibold mb-3 flex items-center gap-2"><Users className="w-5 h-5"/>Roles & Permission Overview</h3>
+      <div className="space-y-2">{roles.map(([name,scope])=><div key={name} className="flex flex-col sm:flex-row sm:justify-between gap-1 border-b border-border py-2 text-sm"><span className="font-medium">{name}</span><span className="text-muted-foreground">{scope}</span></div>)}</div>
+    </div>
+    <div className="rounded-xl bg-card border border-border p-5">
+      <h3 className="font-semibold mb-2 flex items-center gap-2"><Settings className="w-5 h-5"/>System Administration</h3>
+      <p className="text-sm text-muted-foreground">Administrator can navigate to all existing modules, Audit Trail, Reports, Notifications and Settings using the sidebar. Changes to roles and permissions are intentionally not enabled in this frontend-only prototype.</p>
+    </div>
+  </div>;
+}
+
 // ── MAIN APP ──────────────────────────────────────────────
 export default function App() {
   const [screen, setScreen] = useState<AppScreen>(window.location.pathname==="/apply"?"apply":"home");
@@ -2730,6 +2779,7 @@ export default function App() {
       case "reports": return <Reports employees={employees} payrolls={payrolls} leaves={leaves}/>;
       case "notifications": return <NotificationsPage notifs={notifs} onMarkRead={handleMarkRead} onMarkAllRead={handleMarkAllRead}/>;
       case "audit": return <AuditPage/>;
+      case "access-control": return role==="admin"?<AdminAccessCenter/>:<div>Access restricted to System Administrator.</div>;
       case "settings": return <SettingsPage role={role}/>;
       case "profile": return role==="employee"?renderEmployeeRecords(true):<SettingsPage role={role}/>;
       case "recruitment": return <RecruitmentPage vacancies={vacancies} applicants={applicants}
