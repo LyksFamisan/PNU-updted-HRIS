@@ -5,7 +5,7 @@ import {
   Bot, MessageSquare, Send
 } from "lucide-react";
 import { getInitials } from "./data";
-import { getHrisGuideAnswer, HRIS_GUIDE_SUGGESTIONS } from "./hrisAssistant";
+import { getHrisGuideAnswer, HRIS_GUIDE_SUGGESTIONS, ENGLISH_GUIDE_SUGGESTIONS, type GuideLanguage } from "./hrisAssistant";
 import type { AIMessage, Page, Role } from "./types";
 
 export function ChartArea({ data, k1, k2, c1, c2, l1, l2 }: {
@@ -282,11 +282,15 @@ const ASSISTANT_ROLE_LABEL:Record<Role,string>={
 
 export function AIAssistantWidget({role,page,onNavigate}:{role:Role;page:Page;onNavigate:(page:Page)=>void}) {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<AIMessage[]>([{
+  const [language, setLanguage] = useState<GuideLanguage>("fil");
+  const [messages, setMessages] = useState<AIMessage[]>([]);
+  const greeting: AIMessage = {
     id:"init", role:"bot",
-    text:`Kumusta! Ako ang PNU HRIS Guide para sa ${ASSISTANT_ROLE_LABEL[role]}.\n\nMagtanong tungkol sa modules, pag-file, approval, status, o kung saan makikita ang isang feature. Sasagutin kita batay sa workflows ng system at ituturo sa kaugnay na page kapag available.\n\nNasa ${page} page ka ngayon. Ang mga sagot ay para sa HRIS prototype; kumpirmahin sa PNU office ang opisyal na patakaran.`,
-    time:new Date().toLocaleTimeString("en-PH",{hour:"2-digit",minute:"2-digit"})
-  }]);
+    text:language==="en"
+      ? `Hello! I’m the PNU HRIS Guide for ${ASSISTANT_ROLE_LABEL[role]}. Ask me how to find a feature, submit a request, or check its status. You’re on the ${page} page.`
+      : `Kumusta! Ako ang PNU HRIS Guide para sa ${ASSISTANT_ROLE_LABEL[role]}.\n\nMagtanong tungkol sa modules, pag-file, approval, status, o kung saan makikita ang isang feature. Sasagutin kita batay sa workflows ng system at ituturo sa kaugnay na page kapag available.\n\nNasa ${page} page ka ngayon. Ang mga sagot ay para sa HRIS prototype; kumpirmahin sa PNU office ang opisyal na patakaran.`,
+    time:""
+  };
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -299,7 +303,7 @@ export function AIAssistantWidget({role,page,onNavigate}:{role:Role;page:Page;on
     setMessages(prev=>[...prev,{id:`user-${sentAt}`,role:"user",text:text.trim(),time:timestamp()}]);
     setInput(""); setTyping(true);
     setTimeout(()=>{
-      const answer=getHrisGuideAnswer(text,role);
+      const answer=getHrisGuideAnswer(text,role,language);
       setMessages(prev=>[...prev,{id:`bot-${sentAt}`,role:"bot",text:answer.text,time:timestamp(),page:answer.page,pageLabel:answer.pageLabel}]);
       setTyping(false);
     }, 700+Math.random()*700);
@@ -320,10 +324,15 @@ export function AIAssistantWidget({role,page,onNavigate}:{role:Role;page:Page;on
               <p className="text-sm font-semibold text-white leading-none">PNU HRIS Guide</p>
               <p className="text-xs text-white/70 mt-0.5">{ASSISTANT_ROLE_LABEL[role]} · system guide</p>
             </div>
-            <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] text-white/80">Demo</span>
+            <select aria-label="Assistant language" value={language} disabled={typing}
+              onChange={event=>setLanguage(event.target.value as GuideLanguage)}
+              className="rounded border border-white/40 bg-[#1B3A6B] px-2 py-1 text-xs text-white">
+              <option value="fil">Filipino</option>
+              <option value="en">English</option>
+            </select>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-3" style={{backgroundColor:"#F8FAFC",scrollbarWidth:"none"}}>
-            {messages.map(m=>(
+            {[greeting, ...messages].map(m=>(
               <div key={m.id} className={`flex gap-2 ${m.role==="user"?"justify-end":"justify-start"}`}>
                 {m.role==="bot"&&<div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{backgroundColor:"#1B3A6B"}}><Bot className="w-3 h-3 text-white"/></div>}
                 <div className={`max-w-[82%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${m.role==="user"?"rounded-tr-sm text-white":"bg-white border border-slate-300 text-slate-900 rounded-tl-sm shadow-sm"}`}
@@ -345,7 +354,7 @@ export function AIAssistantWidget({role,page,onNavigate}:{role:Role;page:Page;on
             <div ref={bottomRef}/>
           </div>
           <div className="grid grid-cols-2 gap-1.5 px-3 py-2 bg-white border-t border-border shrink-0 max-h-28 overflow-y-auto">
-            {HRIS_GUIDE_SUGGESTIONS.map(q=>(
+            {(language==="en" ? ENGLISH_GUIDE_SUGGESTIONS : HRIS_GUIDE_SUGGESTIONS).map(q=>(
               <button key={q} onClick={()=>sendMessage(q)} disabled={typing}
                 className="text-[11px] px-2 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 transition-colors text-left text-slate-700 disabled:opacity-50">
                 {q}
@@ -356,7 +365,7 @@ export function AIAssistantWidget({role,page,onNavigate}:{role:Role;page:Page;on
             <input ref={inputRef} value={input} onChange={e=>setInput(e.target.value)}
               aria-label="Ask the PNU HRIS Guide"
               onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage(input);}}}
-              placeholder="Magtanong tungkol sa PNU HRIS..." className="min-w-0 flex-1 text-xs border border-border rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 bg-muted/20"/>
+              placeholder={language==="en" ? "Ask about PNU HRIS..." : "Magtanong tungkol sa PNU HRIS..."} className="min-w-0 flex-1 text-xs border border-border rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 bg-muted/20"/>
             <button onClick={()=>sendMessage(input)} disabled={!input.trim()||typing}
               className="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0 disabled:opacity-40 transition-colors"
               style={{backgroundColor:"#1B3A6B"}}>

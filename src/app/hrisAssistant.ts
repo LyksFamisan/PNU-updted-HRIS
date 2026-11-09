@@ -35,6 +35,40 @@ const guides: GuideEntry[] = [
   {keys:["error","bug","not working","hindi gumagana","problem","issue","failed","stuck","help"],answer:"Para matulungan kitang matukoy ang problema, sabihin kung anong portal/module ang gamit mo, anong hakbang ang ginawa mo, anong mensahe ang lumabas, at ano ang inaasahan mong mangyari. Huwag isama ang password, buong ID number, health details o ibang sensitibong impormasyon."},
 ];
 
+export type GuideLanguage = "fil" | "en";
+
+const englishAnswers: Record<string, string> = {
+  portal: "Choose a portal based on your task: Employee/Faculty for your own records and requests, HR Records for PDS and 201 files, Payroll for pay runs, Timekeeping for DTR, Leave Management for leave approvals, and the corresponding staff portal for Recruitment, Training, Performance, Rewards, Wellness, or Faculty Management.",
+  "leave balance": "Employees and faculty can open Leave & Requests, select a leave type and dates, enter the reason, and submit. Track the request there. Leave staff can review pending requests in Leave Management. Confirm official eligibility and supporting documents with PNU HR.",
+  payslip: "Open Payslip & Contributions to view or print your monthly salary and deduction estimate. For finalized amounts, contact Payroll. Payroll staff can review runs in Payroll Management.",
+  gsis: "Open Payslip & Contributions to see or export estimated GSIS, PhilHealth, Pag-IBIG, and withholding tax. Ask Payroll or HR for verified contribution history.",
+  dtr: "Open Schedule & DTR to view attendance, time records, and overtime. Submit a DTR correction, manual DTR, or shift-change request in Leave & Requests. Confirm your actual shift with Timekeeping.",
+  recruitment: "External applicants can browse Job Vacancies, sign in, complete their profile and documents, then submit and track an application. Recruitment staff manage vacancies, applicants, assessments, and appointments in Recruitment.",
+  training: "Employees can apply in Training & Seminars and track their nomination status. Training staff use Learning & Development to review nominations and manage programs, assessments, and reports.",
+  ipcr: "Open Development & IPCR to draft an IPCR, submit an IDP, or request coaching. Performance staff can review these in Performance Management.",
+  praise: "Open Rewards & Recognition to submit or track PRAISE nominations, incentives, and awards. Confirm eligibility and approval requirements with the PNU Rewards Unit.",
+  health: "Wellness staff can manage appointments, assessments, and programs in Health & Wellness. Employees can open Other Applications for requests. Avoid sharing sensitive medical details in open requests.",
+  pds: "Open My PDS to view your Personal Data Sheet or submit changes for HRMO approval. HR Records staff can review PDS requests, employee records, and the 201 document index in HR Records Office.",
+  "employee inquiry": "Open Other Applications or Leave & Requests, select the request type, and submit the required details. Track its status in Applications or Requests. HR Records staff can review requests in Forms & Applications.",
+  memo: "Open Memos & Alerts for published announcements and personal status updates. Staff can view system notifications on the Notifications page.",
+  report: "Open Reports & Analytics for available workforce, payroll, and leave exports. Verify the data before using it in an official report.",
+  faculty: "Open Faculty Profile for faculty records, teaching loads, research and publications, extension work, and evaluations.",
+  login: "Return to the Access Portal and choose your role. Ask the system administrator about account access or password resets. External applicants sign in through PNU Careers. Keep passwords out of chat.",
+  privacy: "Use sample information in prototype workflows. Keep real payroll, personal, and medical details in authorized PNU systems.",
+  error: "Tell me which portal you used, what you clicked, the error message, and what you expected. Keep passwords, full ID numbers, and sensitive details out of the chat.",
+};
+
+export const ENGLISH_GUIDE_SUGGESTIONS = [
+  "How do I submit a leave request?",
+  "Where can I view my payslip and contributions?",
+  "How do I request a DTR correction?",
+  "Where can I update my PDS?",
+  "How do I apply for a vacancy?",
+  "Where can I view a training nomination?",
+  "How do I submit an IPCR or IDP?",
+  "Which portal should I use?",
+];
+
 const normalize=(value:string)=>value.toLocaleLowerCase("en").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\p{L}\p{N}\s-]/gu," ").replace(/\s+/g," ").trim();
 const stopWords=new Set(["how","what","where","when","can","could","please","help","the","for","with","about","my","ako","paano","saan","ano","po","ba","ang","ng","sa","ko","ko?"]);
 
@@ -52,12 +86,13 @@ function relevant(entry:GuideEntry,question:string):number {
   return score;
 }
 
-export function getHrisGuideAnswer(input:string,role?:Role):HrisGuideAnswer {
+export function getHrisGuideAnswer(input:string,role?:Role,language:GuideLanguage="fil"):HrisGuideAnswer {
   const question=normalize(input);
   if(!question)return {text:"I-type ang tanong mo tungkol sa PNU HRIS. Maaari rin akong mag-guide sa leave, payslip, DTR, PDS, recruitment, training, performance, awards, wellness, reports, o account access."};
   const scored=guides.map(entry=>({entry,score:relevant(entry,question)})).sort((a,b)=>b.score-a.score);
   const match=scored[0];
   if(!match||match.score<0.44) {
+    if(language==="en") return {text:"Which PNU HRIS workflow do you need help with? Try asking about a payslip, leave request, DTR correction, or training nomination."};
     return {text:"Hindi ko pa matukoy kung aling PNU HRIS workflow ang tinutukoy mo. Subukan ang mas tiyak na tanong—halimbawa: “Paano magsumite ng leave?”, “Saan makita ang DTR?”, “Paano i-approve ang training nomination?”, o sabihin ang portal at hakbang kung saan ka na-stuck.\n\nSasagot ako batay sa demo workflows; para sa opisyal na patakaran o sensitibong account issue, kumpirmahin sa kaukulang PNU office."};
   }
   let page=match.entry.page;
@@ -68,6 +103,7 @@ export function getHrisGuideAnswer(input:string,role?:Role):HrisGuideAnswer {
   }
   if(page==="payslip"&&role&&role!=="employee") {page="payroll";pageLabel="Buksan ang Payroll Management";}
   if(page==="wellness"&&role&&role!=="employee"&&role!=="wellness") {page="hr-records";pageLabel="Buksan ang HR Records Office";}
+  if(language==="en") return {text:englishAnswers[match.entry.keys[0]],page,pageLabel:page ? "Open related page" : undefined};
   return {text:match.entry.answer,page,pageLabel};
 }
 
