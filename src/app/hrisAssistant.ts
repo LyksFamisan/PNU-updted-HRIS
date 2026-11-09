@@ -58,16 +58,71 @@ const englishAnswers: Record<string, string> = {
   error: "Tell me which portal you used, what you clicked, the error message, and what you expected. Keep passwords, full ID numbers, and sensitive details out of the chat.",
 };
 
-export const ENGLISH_GUIDE_SUGGESTIONS = [
-  "How do I submit a leave request?",
-  "Where can I view my payslip and contributions?",
-  "How do I request a DTR correction?",
-  "Where can I update my PDS?",
-  "How do I apply for a vacancy?",
-  "Where can I view a training nomination?",
-  "How do I submit an IPCR or IDP?",
-  "Which portal should I use?",
-];
+type GuidePrompt = [topic: string, filipino: string, english: string];
+
+const portalPrompts: Record<Role, GuidePrompt[]> = {
+  admin: [
+    ["portal", "Aling portal ang para sa bawat staff role?", "Which portal should each staff role use?"],
+    ["login", "Saan idadaan ang account access issue?", "Who handles account access issues?"],
+    ["report", "Saan makikita ang system reports?", "Where are the system reports?"],
+  ],
+  hr_records: [
+    ["pds", "Paano i-review ang PDS at 201 records?", "How do I review PDS and 201 records?"],
+    ["employee inquiry", "Saan i-review ang employee requests?", "Where do I review employee requests?"],
+    ["memo", "Saan mag-publish ng HR memo?", "Where do I publish an HR memo?"],
+  ],
+  timekeeping: [
+    ["dtr", "Saan i-review ang DTR corrections?", "Where do I review DTR corrections?"],
+    ["dtr", "Saan makikita ang attendance records?", "Where are the attendance records?"],
+  ],
+  leave_management: [
+    ["leave balance", "Paano i-review ang pending leave requests?", "How do I review pending leave requests?"],
+    ["leave balance", "Ano ang dapat tingnan bago mag-approve ng leave?", "What should I check before approving leave?"],
+  ],
+  payroll: [
+    ["payslip", "Saan makikita ang payroll runs?", "Where can I review payroll runs?"],
+    ["gsis", "Saan i-review ang contribution deductions?", "Where do I review contribution deductions?"],
+    ["report", "Paano mag-export ng payroll report?", "How do I export a payroll report?"],
+  ],
+  recruitment: [
+    ["recruitment", "Saan mag-manage ng vacancies?", "Where do I manage vacancies?"],
+    ["recruitment", "Saan i-review ang applicants at assessments?", "Where do I review applicants and assessments?"],
+  ],
+  training: [
+    ["training", "Saan i-review ang training nominations?", "Where do I review training nominations?"],
+    ["training", "Saan mag-manage ng training programs?", "Where do I manage training programs?"],
+  ],
+  performance: [
+    ["ipcr", "Saan i-review ang IPCR at OPCR?", "Where do I review IPCR and OPCR?"],
+    ["ipcr", "Saan makikita ang IDP at coaching?", "Where are IDP and coaching records?"],
+  ],
+  rewards: [
+    ["praise", "Saan mag-submit ng PRAISE nomination?", "Where do I submit a PRAISE nomination?"],
+    ["praise", "Paano i-track ang awards at incentives?", "How do I track awards and incentives?"],
+  ],
+  wellness: [
+    ["health", "Saan mag-manage ng wellness programs?", "Where do I manage wellness programs?"],
+    ["health", "Saan makikita ang counseling schedule?", "Where can I find the counseling schedule?"],
+  ],
+  management: [
+    ["report", "Saan makikita ang workforce at payroll reports?", "Where are the workforce and payroll reports?"],
+    ["privacy", "Paano protektahan ang sensitibong HR data?", "How should I protect sensitive HR data?"],
+  ],
+  employee: [
+    ["leave balance", "Paano ako mag-file ng leave?", "How do I submit my leave request?"],
+    ["payslip", "Paano ko i-print ang payslip ko?", "How do I print my payslip?"],
+    ["dtr", "Paano ako mag-request ng DTR correction?", "How do I request a DTR correction?"],
+    ["pds", "Saan ko puwedeng i-update ang PDS ko?", "Where can I update my PDS?"],
+  ],
+  faculty_management: [
+    ["faculty", "Saan makikita ang faculty profiles at teaching load?", "Where are faculty profiles and teaching loads?"],
+    ["faculty", "Saan makikita ang faculty research at evaluations?", "Where are faculty research and evaluations?"],
+  ],
+};
+
+export function getHrisGuideSuggestions(role: Role, language: GuideLanguage): string[] {
+  return portalPrompts[role].map(([, filipino, english]) => language === "en" ? english : filipino);
+}
 
 const normalize=(value:string)=>value.toLocaleLowerCase("en").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\p{L}\p{N}\s-]/gu," ").replace(/\s+/g," ").trim();
 const stopWords=new Set(["how","what","where","when","can","could","please","help","the","for","with","about","my","ako","paano","saan","ano","po","ba","ang","ng","sa","ko","ko?"]);
@@ -89,7 +144,10 @@ function relevant(entry:GuideEntry,question:string):number {
 export function getHrisGuideAnswer(input:string,role?:Role,language:GuideLanguage="fil"):HrisGuideAnswer {
   const question=normalize(input);
   if(!question)return {text:"I-type ang tanong mo tungkol sa PNU HRIS. Maaari rin akong mag-guide sa leave, payslip, DTR, PDS, recruitment, training, performance, awards, wellness, reports, o account access."};
-  const scored=guides.map(entry=>({entry,score:relevant(entry,question)})).sort((a,b)=>b.score-a.score);
+  const suggestedTopic = role && portalPrompts[role].find(([, filipino, english]) =>
+    normalize(filipino) === question || normalize(english) === question
+  )?.[0];
+  const scored=guides.map(entry=>({entry,score:entry.keys[0] === suggestedTopic ? 2 : relevant(entry,question)})).sort((a,b)=>b.score-a.score);
   const match=scored[0];
   if(!match||match.score<0.44) {
     if(language==="en") return {text:"Which PNU HRIS workflow do you need help with? Try asking about a payslip, leave request, DTR correction, or training nomination."};
@@ -106,14 +164,3 @@ export function getHrisGuideAnswer(input:string,role?:Role,language:GuideLanguag
   if(language==="en") return {text:englishAnswers[match.entry.keys[0]],page,pageLabel:page ? "Open related page" : undefined};
   return {text:match.entry.answer,page,pageLabel};
 }
-
-export const HRIS_GUIDE_SUGGESTIONS=[
-  "Paano mag-file ng leave?",
-  "Paano makita ang payslip at contributions?",
-  "Paano magpa-correct ng DTR?",
-  "Saan mag-update ng PDS?",
-  "Paano mag-apply sa vacancy?",
-  "Saan makita ang training nomination?",
-  "Paano isumite ang IPCR o IDP?",
-  "Anong portal ang dapat kong gamitin?",
-];

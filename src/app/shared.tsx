@@ -5,7 +5,7 @@ import {
   Bot, MessageSquare, Send
 } from "lucide-react";
 import { getInitials } from "./data";
-import { getHrisGuideAnswer, HRIS_GUIDE_SUGGESTIONS, ENGLISH_GUIDE_SUGGESTIONS, type GuideLanguage } from "./hrisAssistant";
+import { getHrisGuideAnswer, getHrisGuideSuggestions, type GuideLanguage } from "./hrisAssistant";
 import type { AIMessage, Page, Role } from "./types";
 
 export function ChartArea({ data, k1, k2, c1, c2, l1, l2 }: {
@@ -354,7 +354,7 @@ export function AIAssistantWidget({role,page,onNavigate}:{role:Role;page:Page;on
             <div ref={bottomRef}/>
           </div>
           <div className="grid grid-cols-2 gap-1.5 px-3 py-2 bg-white border-t border-border shrink-0 max-h-28 overflow-y-auto">
-            {(language==="en" ? ENGLISH_GUIDE_SUGGESTIONS : HRIS_GUIDE_SUGGESTIONS).map(q=>(
+            {getHrisGuideSuggestions(role,language).map(q=>(
               <button key={q} onClick={()=>sendMessage(q)} disabled={typing}
                 className="text-[11px] px-2 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 transition-colors text-left text-slate-700 disabled:opacity-50">
                 {q}
