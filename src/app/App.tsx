@@ -1078,6 +1078,54 @@ function PayrollRequirementsReference(){
  return <section className="mb-5 rounded-xl border border-border bg-card p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-semibold text-sm">PNU Payroll Technical Specifications</h3><p className="text-xs text-muted-foreground mt-1">Required scope from PNU specification. Listing a requirement does not mean its calculation, approval, remittance or export is implemented.</p></div><span className="text-xs rounded-lg border border-amber-300 px-3 py-1 text-amber-700">Requirements reference · not production-ready</span></div><div className="grid gap-2 mt-4">{Object.entries(groups).map(([group,items])=><div key={group} className="border border-border rounded-lg"><button type="button" onClick={()=>setExpanded(expanded===group?null:group)} className="w-full text-left px-3 py-2 text-sm font-semibold flex justify-between"><span>{group} ({items.length})</span><span>{expanded===group?"−":"+"}</span></button>{expanded===group&&<ul className="grid gap-2 px-5 pb-4 md:grid-cols-2">{items.map(item=><li key={item} className="text-xs text-muted-foreground list-disc ml-3">{item}</li>)}</ul>}</div>)}</div></section>;
 }
 
+function CscSalaryComputation() {
+  const [salary, setSalary] = useState("");
+  const [unpaidDays, setUnpaidDays] = useState("0");
+  const basicSalary = Number(salary);
+  const days = Number(unpaidDays);
+  const valid = salary !== "" && unpaidDays !== "" && Number.isFinite(basicSalary) &&
+    basicSalary > 0 && Number.isFinite(days) && days >= 0 && days <= 22;
+  const adjustedSalary = valid ? Math.round((basicSalary * (22 - days) / 22) * 100) / 100 : 0;
+  const formatSalary = (amount: number) => amount.toLocaleString("en-PH", {
+    style: "currency", currency: "PHP",
+  });
+
+  return (
+    <section className="mb-5 rounded-xl border border-border bg-card p-4">
+      <h3 className="text-sm font-semibold">CSC Salary Computation — Leave Without Pay</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Use HR-confirmed unpaid days after applicable leave credits have been applied. This is a monthly estimate before statutory deductions.
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-1 text-xs font-medium">
+          Monthly basic salary (PHP)
+          <input type="number" min="0.01" step="0.01" value={salary}
+            onChange={event => setSalary(event.target.value)} className="rounded-lg border border-border px-3 py-2" />
+        </label>
+        <label className="grid gap-1 text-xs font-medium">
+          Confirmed unpaid days (0–22)
+          <input type="number" min="0" max="22" step="any" value={unpaidDays}
+            onChange={event => setUnpaidDays(event.target.value)} className="rounded-lg border border-border px-3 py-2" />
+        </label>
+      </div>
+      <div className="mt-3 text-sm" aria-live="polite">
+        {valid ? (
+          <>
+            <p>Salary deduction: <strong>{formatSalary(basicSalary - adjustedSalary)}</strong></p>
+            <p>Adjusted basic salary: <strong>{formatSalary(adjustedSalary)}</strong></p>
+          </>
+        ) : <p className="text-muted-foreground">Enter a positive monthly salary and 0 to 22 unpaid days.</p>}
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Adjusted salary = monthly basic salary × (22 − unpaid days) ÷ 22.
+        {" "}
+        <a className="underline" href="https://www.csc.gov.ph/phocadownload/userupload/irmo/mc/2014/mc08%20s.%202014.pdf"
+          target="_blank" rel="noreferrer">CSC MC No. 08, s. 2014</a>
+      </p>
+    </section>
+  );
+}
+
 // ── PAYROLL LIST ──────────────────────────────────────────
 function PayrollList({ setPage, setSelPay, payrolls, onStatusChange }: {
   setPage:(p:Page)=>void; setSelPay:(p:PayrollRun)=>void;
@@ -1102,6 +1150,7 @@ function PayrollList({ setPage, setSelPay, payrolls, onStatusChange }: {
       <SectionHeader title="Payroll Management" subtitle="Philippine Normal University — DBM Salary Schedule"
         action={<Btn onClick={()=>setShowProcess(true)}><Plus className="w-4 h-4"/>Process Payroll</Btn>}/>
       <PayrollDatabaseStatus/>
+      <CscSalaryComputation/>
       <PayrollRequirementsReference/>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <StatCard label="Latest Net Pay" value="₱15.3M" sub="Jul 2024 — 1st Half" icon={CreditCard} color="blue"/>
