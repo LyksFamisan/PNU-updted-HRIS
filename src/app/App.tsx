@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import logoImg from "@/imports/image-1.png";
@@ -1081,6 +1082,8 @@ function PayrollRequirementsReference(){
 function CscSalaryComputation() {
   const [salary, setSalary] = useState("");
   const [unpaidDays, setUnpaidDays] = useState("0");
+  const [employeeName, setEmployeeName] = useState("");
+  const [payMonth, setPayMonth] = useState("");
   const basicSalary = Number(salary);
   const days = Number(unpaidDays);
   const valid = salary !== "" && unpaidDays !== "" && Number.isFinite(basicSalary) &&
@@ -1097,6 +1100,16 @@ function CscSalaryComputation() {
         Use HR-confirmed unpaid days after applicable leave credits have been applied. This is a monthly estimate before statutory deductions.
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-1 text-xs font-medium">
+          Employee name
+          <input value={employeeName} onChange={event => setEmployeeName(event.target.value)}
+            className="rounded-lg border border-border px-3 py-2" />
+        </label>
+        <label className="grid gap-1 text-xs font-medium">
+          Payroll month
+          <input type="month" value={payMonth} onChange={event => setPayMonth(event.target.value)}
+            className="rounded-lg border border-border px-3 py-2" />
+        </label>
         <label className="grid gap-1 text-xs font-medium">
           Monthly basic salary (PHP)
           <input type="number" min="0.01" step="0.01" value={salary}
@@ -1122,6 +1135,46 @@ function CscSalaryComputation() {
         <a className="underline" href="https://www.csc.gov.ph/phocadownload/userupload/irmo/mc/2014/mc08%20s.%202014.pdf"
           target="_blank" rel="noreferrer">CSC MC No. 08, s. 2014</a>
       </p>
+      <button type="button" disabled={!valid} onClick={() => window.print()}
+        className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50">
+        <Printer className="h-4 w-4" />Print CSC Salary Computation
+      </button>
+      {valid && createPortal(
+        <article id="csc-salary-print" style={{display:"none"}}>
+          <style>{`@media print {
+            body:has(> #csc-salary-print) > :not(#csc-salary-print) { display:none !important; }
+            #csc-salary-print { display:block !important; background:white; color:black; padding:12mm; font:11pt Arial,sans-serif; }
+            #csc-salary-print table { width:100%; border-collapse:collapse; margin:16px 0; }
+            #csc-salary-print th, #csc-salary-print td { border:1px solid black; padding:8px; }
+          }`}</style>
+          <header style={{textAlign:"center"}}>
+            <p>Republic of the Philippines</p>
+            <p><strong>Philippine Normal University</strong></p>
+            <h1 style={{fontSize:"16pt", marginTop:12}}>Salary Computation — Leave Without Pay</h1>
+            <p>CSC Memorandum Circular No. 08, s. 2014</p>
+          </header>
+          <p style={{marginTop:16}}>Employee: {employeeName.trim() || "________________________"}</p>
+          <p>Payroll month: {payMonth || "________________________"}</p>
+          <table>
+            <thead><tr><th scope="col">Computation details</th><th scope="col">Value</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Monthly basic salary</th><td>{formatSalary(basicSalary)}</td></tr>
+              <tr><th scope="row">Standard days</th><td>22</td></tr>
+              <tr><th scope="row">Confirmed days without pay</th><td>{days}</td></tr>
+              <tr><th scope="row">Days in paid status</th><td>{(22 - days).toLocaleString("en-PH", {maximumFractionDigits: 12})}</td></tr>
+              <tr><th scope="row">Salary deduction</th><td>{formatSalary(basicSalary - adjustedSalary)}</td></tr>
+              <tr><th scope="row">Adjusted basic salary</th><td><strong>{formatSalary(adjustedSalary)}</strong></td></tr>
+            </tbody>
+          </table>
+          <p>Formula: (Days in paid status ÷ 22) × Monthly basic salary</p>
+          <p>Monthly computation estimate before statutory deductions.</p>
+          <div style={{display:"flex", justifyContent:"space-between", marginTop:48}}>
+            <p>Prepared by: ____________________</p>
+            <p>Reviewed by: ____________________</p>
+          </div>
+        </article>,
+        document.body,
+      )}
     </section>
   );
 }
