@@ -1079,16 +1079,31 @@ function PayrollRequirementsReference(){
  return <section className="mb-5 rounded-xl border border-border bg-card p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-semibold text-sm">PNU Payroll Technical Specifications</h3><p className="text-xs text-muted-foreground mt-1">Required scope from PNU specification. Listing a requirement does not mean its calculation, approval, remittance or export is implemented.</p></div><span className="text-xs rounded-lg border border-amber-300 px-3 py-1 text-amber-700">Requirements reference · not production-ready</span></div><div className="grid gap-2 mt-4">{Object.entries(groups).map(([group,items])=><div key={group} className="border border-border rounded-lg"><button type="button" onClick={()=>setExpanded(expanded===group?null:group)} className="w-full text-left px-3 py-2 text-sm font-semibold flex justify-between"><span>{group} ({items.length})</span><span>{expanded===group?"−":"+"}</span></button>{expanded===group&&<ul className="grid gap-2 px-5 pb-4 md:grid-cols-2">{items.map(item=><li key={item} className="text-xs text-muted-foreground list-disc ml-3">{item}</li>)}</ul>}</div>)}</div></section>;
 }
 
+const salaryDeductionLabels = ["BIR withholding tax", "SSS", "GSIS", "PhilHealth", "Pag-IBIG"] as const;
+
 function CscSalaryComputation() {
   const [salary, setSalary] = useState("");
   const [unpaidDays, setUnpaidDays] = useState("0");
   const [employeeName, setEmployeeName] = useState("");
   const [payMonth, setPayMonth] = useState("");
+  const [deductions, setDeductions] = useState<Partial<Record<typeof salaryDeductionLabels[number], string>>>({});
+  const deductionRows = salaryDeductionLabels.map(label => ({
+    label,
+    amount: Number(deductions[label] || 0),
+  }));
+  const totalDeductionCents = deductionRows.reduce((total, {amount}) => total + Math.round(amount * 100), 0);
+  const totalDeductions = totalDeductionCents / 100;
+  const validDeductions = deductionRows.every(({amount}) =>
+    Number.isFinite(amount) && amount >= 0 &&
+    Math.abs(amount * 100 - Math.round(amount * 100)) < 0.000001
+  );
   const basicSalary = Number(salary);
   const days = Number(unpaidDays);
   const valid = salary !== "" && unpaidDays !== "" && Number.isFinite(basicSalary) &&
     basicSalary > 0 && Number.isFinite(days) && days >= 0 && days <= 22;
   const adjustedSalary = valid ? Math.round((basicSalary * (22 - days) / 22) * 100) / 100 : 0;
+  const canPrint = valid && validDeductions && totalDeductionCents <= Math.round(adjustedSalary * 100);
+  const netEstimate = (Math.round(adjustedSalary * 100) - totalDeductionCents) / 100;
   const formatSalary = (amount: number) => amount.toLocaleString("en-PH", {
     style: "currency", currency: "PHP",
   });
@@ -1097,7 +1112,7 @@ function CscSalaryComputation() {
     <section className="mb-5 rounded-xl border border-border bg-card p-4">
       <h3 className="text-sm font-semibold">CSC Salary Computation — Leave Without Pay</h3>
       <p className="mt-1 text-xs text-muted-foreground">
-        Use HR-confirmed unpaid days after applicable leave credits have been applied. This is a monthly estimate before statutory deductions.
+        Use HR-confirmed unpaid days after applicable leave credits have been applied. Enter employee-share deductions for the same payroll month.
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-xs font-medium">
@@ -1121,11 +1136,33 @@ function CscSalaryComputation() {
             onChange={event => setUnpaidDays(event.target.value)} className="rounded-lg border border-border px-3 py-2" />
         </label>
       </div>
+      <fieldset className="mt-4">
+        <legend className="text-xs font-semibold">Employee deductions (PHP)</legend>
+        <p className="mt-1 text-xs text-muted-foreground">Enter the recorded amounts for this month. Leave items that do not apply blank.</p>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          {salaryDeductionLabels.map(label => (
+            <label key={label} className="grid gap-1 text-xs font-medium">
+              {label}
+              <input type="number" min="0" step="0.01" placeholder="0.00" value={deductions[label] ?? ""}
+                onChange={event => setDeductions({...deductions, [label]:event.target.value})}
+                className="rounded-lg border border-border px-3 py-2" />
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <div className="mt-3 text-sm" aria-live="polite">
         {valid ? (
           <>
             <p>Salary deduction: <strong>{formatSalary(basicSalary - adjustedSalary)}</strong></p>
             <p>Adjusted basic salary: <strong>{formatSalary(adjustedSalary)}</strong></p>
+            {canPrint ? (
+              <>
+                <p>Total employee deductions: <strong>{formatSalary(totalDeductions)}</strong></p>
+                <p>Estimated net pay: <strong>{formatSalary(netEstimate)}</strong></p>
+              </>
+            ) : (
+              <p className="text-red-700">Enter nonnegative amounts with up to two decimal places. Total deductions must fit within the adjusted basic salary.</p>
+            )}
           </>
         ) : <p className="text-muted-foreground">Enter a positive monthly salary and 0 to 22 unpaid days.</p>}
       </div>
@@ -1135,11 +1172,11 @@ function CscSalaryComputation() {
         <a className="underline" href="https://www.csc.gov.ph/phocadownload/userupload/irmo/mc/2014/mc08%20s.%202014.pdf"
           target="_blank" rel="noreferrer">CSC MC No. 08, s. 2014</a>
       </p>
-      <button type="button" disabled={!valid} onClick={() => window.print()}
+      <button type="button" disabled={!canPrint} onClick={() => window.print()}
         className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold disabled:opacity-50">
         <Printer className="h-4 w-4" />Print CSC Salary Computation
       </button>
-      {valid && createPortal(
+      {canPrint && createPortal(
         <article id="csc-salary-print" style={{display:"none"}}>
           <style>{`@media print {
             body:has(> #csc-salary-print) > :not(#csc-salary-print) { display:none !important; }
@@ -1164,10 +1201,15 @@ function CscSalaryComputation() {
               <tr><th scope="row">Days in paid status</th><td>{(22 - days).toLocaleString("en-PH", {maximumFractionDigits: 12})}</td></tr>
               <tr><th scope="row">Salary deduction</th><td>{formatSalary(basicSalary - adjustedSalary)}</td></tr>
               <tr><th scope="row">Adjusted basic salary</th><td><strong>{formatSalary(adjustedSalary)}</strong></td></tr>
+              {deductionRows.filter(({amount}) => amount > 0).map(({label, amount}) => (
+                <tr key={label}><th scope="row">{label}</th><td>{formatSalary(amount)}</td></tr>
+              ))}
+              <tr><th scope="row">Total employee deductions</th><td>{formatSalary(totalDeductions)}</td></tr>
+              <tr><th scope="row">Estimated net pay</th><td><strong>{formatSalary(netEstimate)}</strong></td></tr>
             </tbody>
           </table>
           <p>Formula: (Days in paid status ÷ 22) × Monthly basic salary</p>
-          <p>Monthly computation estimate before statutory deductions.</p>
+          <p>Monthly estimate based on the employee deductions entered above.</p>
           <div style={{display:"flex", justifyContent:"space-between", marginTop:48}}>
             <p>Prepared by: ____________________</p>
             <p>Reviewed by: ____________________</p>
