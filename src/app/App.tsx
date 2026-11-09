@@ -3123,7 +3123,7 @@ export default function App() {
     }
   };
 
-  if (screen==="apply") return <ExternalRecruitmentPlatform vacancies={vacancies} applicants={applicants} api={externalRecruitmentApi} onApply={handleAddApplicant}/>;
+  if (screen==="apply") return <><ExternalRecruitmentPlatform vacancies={vacancies} applicants={applicants} api={externalRecruitmentApi} onApply={handleAddApplicant}/><AIAssistantWidget role="careers" page="recruitment"/></>;
   if (screen==="home") return <HomeScreen onEnter={()=>setScreen("portal")}/>;
   if (screen==="portal") return <PortalScreen onBack={()=>setScreen("home")} onSelectRole={handleSelectPortal}/>;
   if (screen==="login") return <LoginScreen role={loginRole} onBack={()=>setScreen("portal")} onLogin={handleLogin}/>;

@@ -5,7 +5,7 @@ import {
   Bot, MessageSquare, Send
 } from "lucide-react";
 import { getInitials } from "./data";
-import { getHrisGuideAnswer, getHrisGuideSuggestions, type GuideLanguage } from "./hrisAssistant";
+import { getHrisGuideAnswer, getHrisGuideSuggestions, type GuideLanguage, type GuidePortal } from "./hrisAssistant";
 import type { AIMessage, Page, Role } from "./types";
 
 export function ChartArea({ data, k1, k2, c1, c2, l1, l2 }: {
@@ -272,7 +272,8 @@ export function AttendanceClock() {
   );
 }
 
-const ASSISTANT_ROLE_LABEL:Record<Role,string>={
+const ASSISTANT_ROLE_LABEL:Record<GuidePortal,string>={
+  careers:"PNU Careers",
   admin:"System Administrator",hr_records:"HR Records Office",timekeeping:"Timekeeping Staff",
   leave_management:"Leave Management Staff",payroll:"Payroll Staff",recruitment:"Recruitment Staff",
   training:"Training Staff",performance:"Performance Management Staff",rewards:"Rewards Unit",
@@ -280,15 +281,15 @@ const ASSISTANT_ROLE_LABEL:Record<Role,string>={
   faculty_management:"Faculty Management Staff",
 };
 
-export function AIAssistantWidget({role,page,onNavigate}:{role:Role;page:Page;onNavigate:(page:Page)=>void}) {
+export function AIAssistantWidget({role,page,onNavigate}:{role:GuidePortal;page:Page;onNavigate?:(page:Page)=>void}) {
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState<GuideLanguage>("fil");
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const greeting: AIMessage = {
     id:"init", role:"bot",
     text:language==="en"
-      ? `Hello! I’m the PNU HRIS Guide for ${ASSISTANT_ROLE_LABEL[role]}. Ask me how to find a feature, submit a request, or check its status. You’re on the ${page} page.`
-      : `Kumusta! Ako ang PNU HRIS Guide para sa ${ASSISTANT_ROLE_LABEL[role]}.\n\nMagtanong tungkol sa modules, pag-file, approval, status, o kung saan makikita ang isang feature. Sasagutin kita batay sa workflows ng system at ituturo sa kaugnay na page kapag available.\n\nNasa ${page} page ka ngayon. Ang mga sagot ay para sa HRIS prototype; kumpirmahin sa PNU office ang opisyal na patakaran.`,
+      ? `Hello! I’m the PNU HRIS Guide for ${ASSISTANT_ROLE_LABEL[role]}. Ask me how to find a feature, submit a request, or check its status. You’re on the ${role==="careers" ? "PNU Careers" : page} page.`
+      : `Kumusta! Ako ang PNU HRIS Guide para sa ${ASSISTANT_ROLE_LABEL[role]}.\n\nMagtanong tungkol sa modules, pag-file, approval, status, o kung saan makikita ang isang feature. Sasagutin kita batay sa workflows ng system at ituturo sa kaugnay na page kapag available.\n\nNasa ${role==="careers" ? "PNU Careers" : page} page ka ngayon. Ang mga sagot ay para sa HRIS prototype; kumpirmahin sa PNU office ang opisyal na patakaran.`,
     time:""
   };
   const [input, setInput] = useState("");
@@ -338,7 +339,7 @@ export function AIAssistantWidget({role,page,onNavigate}:{role:Role;page:Page;on
                 <div className={`max-w-[82%] px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${m.role==="user"?"rounded-tr-sm text-white":"bg-white border border-slate-300 text-slate-900 rounded-tl-sm shadow-sm"}`}
                   style={m.role==="user"?{backgroundColor:"#1B3A6B"}:{}}>
                   {m.text}
-                  {m.role==="bot"&&m.page&&<button onClick={()=>onNavigate(m.page!)} className="mt-2 flex w-full items-center justify-between gap-2 rounded-lg border border-[#1B3A6B]/30 bg-blue-50 px-2.5 py-2 text-left text-xs font-semibold text-[#1B3A6B] hover:bg-blue-100">{m.pageLabel||"Open related page"}<ArrowUpRight className="h-3.5 w-3.5 shrink-0"/></button>}
+                  {m.role==="bot"&&m.page&&onNavigate&&<button onClick={()=>onNavigate(m.page!)} className="mt-2 flex w-full items-center justify-between gap-2 rounded-lg border border-[#1B3A6B]/30 bg-blue-50 px-2.5 py-2 text-left text-xs font-semibold text-[#1B3A6B] hover:bg-blue-100">{m.pageLabel||"Open related page"}<ArrowUpRight className="h-3.5 w-3.5 shrink-0"/></button>}
                   <p className={`text-[10px] mt-1.5 ${m.role==="user"?"text-white/70":"text-slate-600"}`}>{m.time}</p>
                 </div>
               </div>

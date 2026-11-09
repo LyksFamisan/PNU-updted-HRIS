@@ -60,7 +60,14 @@ const englishAnswers: Record<string, string> = {
 
 type GuidePrompt = [topic: string, filipino: string, english: string];
 
-const portalPrompts: Record<Role, GuidePrompt[]> = {
+export type GuidePortal = Role | "careers";
+
+const portalPrompts: Record<GuidePortal, GuidePrompt[]> = {
+  careers: [
+    ["recruitment", "Saan makikita ang job vacancies?", "Where can I see job vacancies?"],
+    ["recruitment", "Paano magsumite ng application?", "How do I submit an application?"],
+    ["recruitment", "Paano i-track ang application status?", "How do I track my application status?"],
+  ],
   admin: [
     ["portal", "Aling portal ang para sa bawat staff role?", "Which portal should each staff role use?"],
     ["login", "Saan idadaan ang account access issue?", "Who handles account access issues?"],
@@ -120,7 +127,7 @@ const portalPrompts: Record<Role, GuidePrompt[]> = {
   ],
 };
 
-export function getHrisGuideSuggestions(role: Role, language: GuideLanguage): string[] {
+export function getHrisGuideSuggestions(role: GuidePortal, language: GuideLanguage): string[] {
   return portalPrompts[role].map(([, filipino, english]) => language === "en" ? english : filipino);
 }
 
@@ -141,7 +148,7 @@ function relevant(entry:GuideEntry,question:string):number {
   return score;
 }
 
-export function getHrisGuideAnswer(input:string,role?:Role,language:GuideLanguage="fil"):HrisGuideAnswer {
+export function getHrisGuideAnswer(input:string,role?:GuidePortal,language:GuideLanguage="fil"):HrisGuideAnswer {
   const question=normalize(input);
   if(!question)return {text:"I-type ang tanong mo tungkol sa PNU HRIS. Maaari rin akong mag-guide sa leave, payslip, DTR, PDS, recruitment, training, performance, awards, wellness, reports, o account access."};
   const suggestedTopic = role && portalPrompts[role].find(([, filipino, english]) =>
@@ -152,6 +159,11 @@ export function getHrisGuideAnswer(input:string,role?:Role,language:GuideLanguag
   if(!match||match.score<0.44) {
     if(language==="en") return {text:"Which PNU HRIS workflow do you need help with? Try asking about a payslip, leave request, DTR correction, or training nomination."};
     return {text:"Hindi ko pa matukoy kung aling PNU HRIS workflow ang tinutukoy mo. Subukan ang mas tiyak na tanong—halimbawa: “Paano magsumite ng leave?”, “Saan makita ang DTR?”, “Paano i-approve ang training nomination?”, o sabihin ang portal at hakbang kung saan ka na-stuck.\n\nSasagot ako batay sa demo workflows; para sa opisyal na patakaran o sensitibong account issue, kumpirmahin sa kaukulang PNU office."};
+  }
+  if(role==="careers") {
+    return {text: language==="en"
+      ? "Open Job Vacancies to browse openings and deadlines. Sign in, select a vacancy, complete your profile, attach the required documents, and submit. Open your applicant account to view your tracking number, application status, and any schedules."
+      : "Buksan ang Job Vacancies para makita ang openings at deadlines. Mag-sign in, pumili ng vacancy, kumpletuhin ang profile, i-attach ang required documents, at isumite. Sa applicant account makikita ang tracking number, application status, at mga schedule."};
   }
   let page=match.entry.page;
   let pageLabel=match.entry.label;
