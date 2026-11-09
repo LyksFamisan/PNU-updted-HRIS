@@ -1073,6 +1073,87 @@ function PayrollDatabaseStatus(){
  return <div className="mb-4 rounded-xl border border-border bg-card px-4 py-3 text-xs"><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">Neon PostgreSQL database</span><span className={status?.connected&&status?.schemaReady?"text-green-700":"text-amber-700"}>{!status?"Checking connection…":status.connected&&status.schemaReady?"Connected · schema ready":"Connection or schema needs attention"}</span></div><p className="text-muted-foreground mt-1">Actual PNU employee and payroll data have not been imported. This screen uses local storage for payroll changes; use the secure payroll workspace for database-backed periods and employee records. Payroll calculations and release are not yet enabled.</p></div>;
 }
 
+function ScholarshipPayrollDraft() {
+  const [month, setMonth] = useState("");
+  const [student, setStudent] = useState("");
+  const [reference, setReference] = useState("");
+  const [amount, setAmount] = useState("");
+  const [rows, setRows] = useState<{id: number; student: string; reference: string; cents: number}[]>([]);
+  const nextId = useRef(0);
+  const report = useRef<HTMLDivElement>(null);
+  const [printError, setPrintError] = useState("");
+  const total = rows.reduce((sum, row) => sum + row.cents, 0);
+  const pesos = (cents: number) => (cents / 100).toLocaleString("en-PH", {style:"currency", currency:"PHP"});
+  const canPrint = Boolean(month && rows.length);
+
+  function addPayment(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const cents = Math.round(Number(amount) * 100);
+    if (!student.trim() || !reference.trim() || !Number.isSafeInteger(cents + total) || cents <= 0) return;
+    const id = ++nextId.current;
+    setRows(current => [...current, {id, student:student.trim(), reference:reference.trim(), cents}]);
+    setStudent("");
+    setReference("");
+    setAmount("");
+  }
+
+  function printDraft() {
+    if (!canPrint || !report.current) return;
+    const preview = window.open("", "_blank");
+    if (!preview) {
+      setPrintError("Allow pop-ups for this site, then try printing again.");
+      return;
+    }
+    setPrintError("");
+    preview.opener = null;
+    preview.document.title = "PNU Student Scholarship Payroll Draft";
+    const style = preview.document.createElement("style");
+    style.textContent = "body{font:11pt Arial,sans-serif;margin:20mm;color:black}table{width:100%;border-collapse:collapse}th,td{border:1px solid black;padding:8px;text-align:left}th:last-child,td:last-child{text-align:right}td:last-child{white-space:nowrap}tr{break-inside:avoid}@media print{.draft-actions{display:none}}";
+    preview.document.head.append(style);
+    const copy = preview.document.importNode(report.current, true);
+    copy.querySelectorAll(".draft-actions").forEach(cell => cell.remove());
+    preview.document.body.append(copy);
+    preview.print();
+  }
+
+  return (
+    <div className="mt-3 space-y-3">
+      <p className="text-muted-foreground">Enter approved scholarship amounts and their award references. Keep this page open until you print or save the draft as PDF.</p>
+      <label className="grid gap-1">Payroll month
+        <input type="month" value={month} onChange={event => setMonth(event.target.value)} className="rounded border border-border bg-card p-2" />
+      </label>
+      <form onSubmit={addPayment} className="grid gap-2">
+        <label className="grid gap-1">Student name or ID
+          <input required maxLength={120} value={student} onChange={event => setStudent(event.target.value)} className="rounded border border-border bg-card p-2" />
+        </label>
+        <label className="grid gap-1">Scholarship or award reference
+          <input required maxLength={120} value={reference} onChange={event => setReference(event.target.value)} className="rounded border border-border bg-card p-2" />
+        </label>
+        <label className="grid gap-1">Approved amount (PHP)
+          <input required type="number" min="0.01" max="999999999.99" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} className="rounded border border-border bg-card p-2" />
+        </label>
+        <button type="submit" className="justify-self-start rounded border border-border px-3 py-2 font-semibold">Add payment</button>
+      </form>
+      <div ref={report} className="overflow-x-auto">
+        <h4 className="font-semibold">Philippine Normal University · Student Scholarship Payroll Draft</h4>
+        <p>Payroll month: {month || "Select month"}</p>
+        <table className="mt-2 w-full">
+          <thead><tr><th scope="col">Student</th><th scope="col">Award reference</th><th scope="col">Amount</th><th scope="col" className="draft-actions">Action</th></tr></thead>
+          <tbody>{rows.map(row => (
+            <tr key={row.id} className="border-t border-border">
+              <td className="p-1">{row.student}</td><td className="p-1">{row.reference}</td><td className="p-1">{pesos(row.cents)}</td>
+              <td className="draft-actions"><button type="button" aria-label={`Remove payment for ${row.student}`} onClick={() => setRows(current => current.filter(item => item.id !== row.id))} className="p-1 underline">Remove</button></td>
+            </tr>
+          ))}</tbody>
+          <tfoot><tr><th scope="row" colSpan={2}>Total ({rows.length} payments)</th><td>{pesos(total)}</td><td className="draft-actions"/></tr></tfoot>
+        </table>
+      </div>
+      <button type="button" disabled={!canPrint} onClick={printDraft} className="rounded border border-border px-3 py-2 font-semibold disabled:opacity-50">Print scholarship draft</button>
+      {printError && <p role="alert">{printError}</p>}
+    </div>
+  );
+}
+
 function PayrollRequirementsReference(){
  const groups:Record<string,string[]>={"Payroll processing":["Payroll period management","CSC rules, regulations and policies","Income and benefits management","Deductions management","Loans and payments management","General Payroll","COS and Part-Time Faculty Payroll","Extra-Teaching Load Payroll","Extra-Teaching Differential Payroll","Honoraria Payroll","Student Scholarship Payroll","Hazard Payment","Night Differential","Leave Monetization","Loyalty Incentive Pay","Longevity Incentive Pay","Step Increment"],"Bonuses and allowances":["Mid-year Bonus","Year-end and Cash Gift Bonus","Anniversary Incentive","Affiliation Incentive","Productivity Enhancement Incentive","Clothing Allowance","Medical Allowance","Subsistence and Laundry Allowance","Flexible Learning and Teaching Support Allowance (FLATS)","Athletic Allowance","CNA","Living Quarters Allowance","Perfect Attendance Incentive","Self-Development Incentives","Special Awards Incentive (PRAISE)"],"Review and controls":["Tax Refund and Deficit Adjustment","Review, adjustment and finalization","Payroll locking","Employee exclusion/cancellation","Payroll detail approval","Bulk Uploading of Tax Amount","Re-compute Specific Employee","Exclude Employees on Specific Week Pay","Anticipated Leave Without Pay","Threshold computation for overtime, extra teaching load and honoraria","Honorarium and overtime payment limits"],"Payroll and contribution reports":["Payslip Report","Excluded/Cancelled Employees Report","PHIC Contribution Table","BIR Tax Table","Cover Page","General Payroll Report","LBP Report","Bank Proof List","Summary of Mandatory Deductions","Summary of Salaries, Benefits and Other Allowances","Summary of Payroll","YTD Payroll Register","Hazard Payment Report","Hazard Payment Summary","Year End and Cash Gift Bonus Report","Mid-Year Bonus Report","Clothing Allowance Report","Monetization of Leave Credits Report","Contribution Reports","GSIS Contribution Report","PHIC Contribution Report","PAGIBIG Contribution Report","Tax Contribution Report","Mortuary Deduction","Union Dues","Summary of Employee Payroll Index","Provident Share Reports","Monthly Loans Report","Quarterly and Annual ROSA"],"Remittances and certificates":["Remittance Reports","Withholding Tax Monthly Remittance","PHIC Remittance","PHIC Monthly Remittance","GSIS Remittance","GSIS Monthly Remittance","SSS Remittance","SSS Monthly Remittance","PAGIBIG Remittance","PAGIBIG Monthly Remittance","Loans and Payments Report","Monthly Loan and Payment Report","Certificate of PHIC, PAGIBIG, GSIS Contributions and Loans","Certificate of Last Pay","GSIS Contribution Percentage Settings","PAGIBIG Minimum Contributions Settings","ISO Incentive Payroll and Vouchers","Mandatory Service Retiree Payroll and Vouchers","Land Bank Digital Banking Payroll File","BIR 2316","BIR 2307"]};
  const actions: Record<string, { href: string; label: string; detail: string }> = {
@@ -1092,10 +1173,11 @@ function PayrollRequirementsReference(){
       <div className="grid gap-2 px-3 pb-3 md:grid-cols-2">
        {items.map(item => {
         const action = actions[item];
+        const scholarship = item === "Student Scholarship Payroll";
         return (
          <details key={item} className="rounded-md border border-border p-2 text-xs">
-          <summary className="cursor-pointer font-medium">{item} <span className="ml-1 text-muted-foreground">· {action ? "Available" : "Pending"}</span></summary>
-          <p className="mt-2 text-muted-foreground">{action?.detail ?? "Implementation pending for this requirement."}</p>
+          <summary className="cursor-pointer font-medium">{item} <span className="ml-1 text-muted-foreground">· {scholarship ? "Draft worksheet" : action ? "Available" : "Pending"}</span></summary>
+          {scholarship ? <ScholarshipPayrollDraft/> : <p className="mt-2 text-muted-foreground">{action?.detail ?? "Implementation pending for this requirement."}</p>}
           {action && <a className="mt-2 inline-block font-semibold underline" href={action.href}>{action.label}</a>}
          </details>
         );
