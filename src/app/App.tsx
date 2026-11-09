@@ -1074,9 +1074,38 @@ function PayrollDatabaseStatus(){
 }
 
 function PayrollRequirementsReference(){
- const [expanded,setExpanded]=useState<string|null>(null);
  const groups:Record<string,string[]>={"Payroll processing":["Payroll period management","CSC rules, regulations and policies","Income and benefits management","Deductions management","Loans and payments management","General Payroll","COS and Part-Time Faculty Payroll","Extra-Teaching Load Payroll","Extra-Teaching Differential Payroll","Honoraria Payroll","Student Scholarship Payroll","Hazard Payment","Night Differential","Leave Monetization","Loyalty Incentive Pay","Longevity Incentive Pay","Step Increment"],"Bonuses and allowances":["Mid-year Bonus","Year-end and Cash Gift Bonus","Anniversary Incentive","Affiliation Incentive","Productivity Enhancement Incentive","Clothing Allowance","Medical Allowance","Subsistence and Laundry Allowance","Flexible Learning and Teaching Support Allowance (FLATS)","Athletic Allowance","CNA","Living Quarters Allowance","Perfect Attendance Incentive","Self-Development Incentives","Special Awards Incentive (PRAISE)"],"Review and controls":["Tax Refund and Deficit Adjustment","Review, adjustment and finalization","Payroll locking","Employee exclusion/cancellation","Payroll detail approval","Bulk Uploading of Tax Amount","Re-compute Specific Employee","Exclude Employees on Specific Week Pay","Anticipated Leave Without Pay","Threshold computation for overtime, extra teaching load and honoraria","Honorarium and overtime payment limits"],"Payroll and contribution reports":["Payslip Report","Excluded/Cancelled Employees Report","PHIC Contribution Table","BIR Tax Table","Cover Page","General Payroll Report","LBP Report","Bank Proof List","Summary of Mandatory Deductions","Summary of Salaries, Benefits and Other Allowances","Summary of Payroll","YTD Payroll Register","Hazard Payment Report","Hazard Payment Summary","Year End and Cash Gift Bonus Report","Mid-Year Bonus Report","Clothing Allowance Report","Monetization of Leave Credits Report","Contribution Reports","GSIS Contribution Report","PHIC Contribution Report","PAGIBIG Contribution Report","Tax Contribution Report","Mortuary Deduction","Union Dues","Summary of Employee Payroll Index","Provident Share Reports","Monthly Loans Report","Quarterly and Annual ROSA"],"Remittances and certificates":["Remittance Reports","Withholding Tax Monthly Remittance","PHIC Remittance","PHIC Monthly Remittance","GSIS Remittance","GSIS Monthly Remittance","SSS Remittance","SSS Monthly Remittance","PAGIBIG Remittance","PAGIBIG Monthly Remittance","Loans and Payments Report","Monthly Loan and Payment Report","Certificate of PHIC, PAGIBIG, GSIS Contributions and Loans","Certificate of Last Pay","GSIS Contribution Percentage Settings","PAGIBIG Minimum Contributions Settings","ISO Incentive Payroll and Vouchers","Mandatory Service Retiree Payroll and Vouchers","Land Bank Digital Banking Payroll File","BIR 2316","BIR 2307"]};
- return <section className="mb-5 rounded-xl border border-border bg-card p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-semibold text-sm">PNU Payroll Technical Specifications</h3><p className="text-xs text-muted-foreground mt-1">Required scope from PNU specification. Listing a requirement does not mean its calculation, approval, remittance or export is implemented.</p></div><span className="text-xs rounded-lg border border-amber-300 px-3 py-1 text-amber-700">Requirements reference · not production-ready</span></div><div className="grid gap-2 mt-4">{Object.entries(groups).map(([group,items])=><div key={group} className="border border-border rounded-lg"><button type="button" onClick={()=>setExpanded(expanded===group?null:group)} className="w-full text-left px-3 py-2 text-sm font-semibold flex justify-between"><span>{group} ({items.length})</span><span>{expanded===group?"−":"+"}</span></button>{expanded===group&&<ul className="grid gap-2 px-5 pb-4 md:grid-cols-2">{items.map(item=><li key={item} className="text-xs text-muted-foreground list-disc ml-3">{item}</li>)}</ul>}</div>)}</div></section>;
+ const actions: Record<string, { href: string; label: string; detail: string }> = {
+  "Payroll period management": {href:"/secure-payroll", label:"Open secure payroll", detail:"Authorized payroll staff can create draft payroll periods and view saved periods."},
+  "CSC rules, regulations and policies": {href:"#csc-salary-calculator", label:"Open CSC salary calculator", detail:"Compute and print a monthly salary adjustment for HR-confirmed leave without pay."},
+  "Deductions management": {href:"#csc-employee-deductions", label:"Enter employee deductions", detail:"Enter monthly employee deductions and print the estimated net pay. Entries are for this worksheet."},
+  "Payslip Report": {href:"#payroll-run-list", label:"Choose a payroll run", detail:"Use the View button beside a payroll run to open its payslip preview."},
+ };
+ return (
+  <section className="mb-5 rounded-xl border border-border bg-card p-4">
+   <h3 className="text-sm font-semibold">PNU Payroll Technical Specifications</h3>
+   <p className="mt-1 text-xs text-muted-foreground">Expand a requirement to see its status and open the available workflow.</p>
+   <div className="mt-4 grid gap-2">
+    {Object.entries(groups).map(([group, items]) => (
+     <details key={group} className="rounded-lg border border-border">
+      <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">{group} ({items.length})</summary>
+      <div className="grid gap-2 px-3 pb-3 md:grid-cols-2">
+       {items.map(item => {
+        const action = actions[item];
+        return (
+         <details key={item} className="rounded-md border border-border p-2 text-xs">
+          <summary className="cursor-pointer font-medium">{item} <span className="ml-1 text-muted-foreground">· {action ? "Available" : "Pending"}</span></summary>
+          <p className="mt-2 text-muted-foreground">{action?.detail ?? "Implementation pending for this requirement."}</p>
+          {action && <a className="mt-2 inline-block font-semibold underline" href={action.href}>{action.label}</a>}
+         </details>
+        );
+       })}
+      </div>
+     </details>
+    ))}
+   </div>
+  </section>
+ );
 }
 
 const salaryDeductionLabels = ["BIR withholding tax", "SSS", "GSIS", "PhilHealth", "Pag-IBIG"] as const;
@@ -1109,7 +1138,7 @@ function CscSalaryComputation() {
   });
 
   return (
-    <section className="mb-5 rounded-xl border border-border bg-card p-4">
+    <section id="csc-salary-calculator" className="mb-5 rounded-xl border border-border bg-card p-4">
       <h3 className="text-sm font-semibold">CSC Salary Computation — Leave Without Pay</h3>
       <p className="mt-1 text-xs text-muted-foreground">
         Use HR-confirmed unpaid days after applicable leave credits have been applied. Enter employee-share deductions for the same payroll month.
@@ -1136,7 +1165,7 @@ function CscSalaryComputation() {
             onChange={event => setUnpaidDays(event.target.value)} className="rounded-lg border border-border px-3 py-2" />
         </label>
       </div>
-      <fieldset className="mt-4">
+      <fieldset id="csc-employee-deductions" className="mt-4">
         <legend className="text-xs font-semibold">Employee deductions (PHP)</legend>
         <p className="mt-1 text-xs text-muted-foreground">Enter the recorded amounts for this month. Leave items that do not apply blank.</p>
         <div className="mt-2 grid gap-3 sm:grid-cols-2">
@@ -1253,7 +1282,7 @@ function PayrollList({ setPage, setSelPay, payrolls, onStatusChange }: {
         <StatCard label="For Approval" value={String(forApproval)} sub="Awaiting authorization" icon={AlertCircle} color="red"/>
         <StatCard label="YTD Payroll" value="₱214.9M" sub="January – July 2024" icon={TrendingUp} color="gold"/>
       </div>
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
+      <div id="payroll-run-list" className="flex items-center gap-2 mb-3 flex-wrap">
         {["All","Released","Approved","For Approval","Draft"].map(s=>(
           <button key={s} onClick={()=>setStatusF(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusF===s?"text-white":"bg-card border border-border text-muted-foreground hover:bg-muted"}`}
@@ -1286,7 +1315,7 @@ function PayrollList({ setPage, setSelPay, payrolls, onStatusChange }: {
                     <td className="px-4 py-3"><Badge variant={pr.status}>{pr.status}</Badge></td>
                     <td className="px-4 py-3"><div className="flex items-center justify-end gap-1">
                       {nxt&&lbl&&<button onClick={()=>setConfirmPay({pr,next:nxt})} className="text-xs font-medium px-2.5 py-1 rounded-lg border border-border hover:bg-muted transition-colors whitespace-nowrap">{lbl}</button>}
-                      <button onClick={()=>{setSelPay(pr);setPage("payslip");}} className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-[#C8A84B] transition-colors"><Eye className="w-4 h-4"/></button>
+                      <button aria-label={`View payslip for ${pr.period}`} onClick={()=>{setSelPay(pr);setPage("payslip");}} className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-[#C8A84B] transition-colors"><Eye className="w-4 h-4"/></button>
                       <button className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><Download className="w-4 h-4"/></button>
                     </div></td>
                   </tr>
