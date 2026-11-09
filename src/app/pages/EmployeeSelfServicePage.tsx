@@ -135,25 +135,32 @@ export function EmployeeSelfServicePage({ employee, employees, payrolls, leaves,
       <header style={{textAlign:"center", marginBottom:20}}>
         <p>Republic of the Philippines</p>
         <p><strong>Philippine Normal University</strong></p>
-        <h2 style={{fontSize:"16pt", marginTop:12}}>Employee Salary Computation</h2>
-        <p>Monthly estimate based on current basic salary</p>
+        <h2 style={{fontSize:"16pt", marginTop:12}}>Monthly Employee Payslip</h2>
+        <p>Estimated amounts based on current basic salary</p>
       </header>
       <p>Employee: {employee.fullName}</p>
       <p>Employee number: {employee.employeeNo}</p>
       <p>Position: {employee.position}</p>
       <table style={{width:"100%", borderCollapse:"collapse", margin:"16px 0"}}>
         <thead><tr><th scope="col">Computation details</th><th scope="col">Amount</th></tr></thead>
-        <tbody>{[
-          ["Monthly basic salary", payslip.grossPay],
-          ["GSIS", payslip.gsis],
-          ["PhilHealth", payslip.philhealth],
-          ["Pag-IBIG", payslip.pagibig],
-          ["BIR withholding tax", payslip.tax],
-          ["Total estimated deductions", payslip.totalDeductions],
-          ["Estimated monthly net pay", payslip.netPay],
-        ].map(([label, amount]) => (
-          <tr key={label}><th scope="row" style={{textAlign:"left"}}>{label}</th><td style={{textAlign:"right"}}>{fc(Number(amount))}</td></tr>
-        ))}</tbody>
+        <tbody>
+          <tr><th colSpan={2} scope="rowgroup" style={{textAlign:"left"}}>Gross earnings</th></tr>
+          <tr><th scope="row" style={{textAlign:"left"}}>Monthly basic salary</th><td style={{textAlign:"right"}}>{fc(payslip.grossPay)}</td></tr>
+          <tr><th scope="row" style={{textAlign:"left"}}>Total gross earnings</th><td style={{textAlign:"right"}}>{fc(payslip.grossPay)}</td></tr>
+        </tbody>
+        <tbody>
+          <tr><th colSpan={2} scope="rowgroup" style={{textAlign:"left"}}>Deductions</th></tr>
+          {[
+            ["GSIS", payslip.gsis],
+            ["PhilHealth", payslip.philhealth],
+            ["Pag-IBIG", payslip.pagibig],
+            ["BIR withholding tax", payslip.tax],
+            ["Total estimated deductions", payslip.totalDeductions],
+          ].map(([label, amount]) => (
+            <tr key={label}><th scope="row" style={{textAlign:"left"}}>{label}</th><td style={{textAlign:"right"}}>{fc(Number(amount))}</td></tr>
+          ))}
+        </tbody>
+        <tfoot><tr><th scope="row" style={{textAlign:"left"}}>Estimated monthly net pay</th><td style={{textAlign:"right"}}><strong>{fc(payslip.netPay)}</strong></td></tr></tfoot>
       </table>
       <p><strong>Leave Without Pay computation reference</strong></p>
       <p>CSC MC No. 08, s. 2014: (Days in paid status ÷ 22) × Monthly basic salary.</p>
